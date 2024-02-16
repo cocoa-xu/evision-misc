@@ -1,0 +1,57 @@
+name: release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Cache OpenCV text detection IC15 ResNet50 model
+        id: cache-text-detection-ic15-resnet50
+        uses: actions/cache@v4
+        with:
+          key: text-detection-ic15-resnet50
+          path: |
+            ./models/text_detection_DB_IC15_resnet50.onnx
+
+      - name: Download OpenCV text detection IC15 ResNet50 model
+        if: steps.cache-text-detection-ic15-resnet50.outputs.cache-hit != 'true'
+        run: |
+          # source: https://docs.opencv.org/4.x/d4/d43/tutorial_dnn_text_spotting.html
+          mkdir -p models
+          curl -fSL 'https://drive.google.com/uc?export=download&id=17_ABp79PlFt9yPCxSaarVc_DKTmrSGGf' -o "models/text_detection_DB_IC15_resnet50.onnx"
+
+      - name: Cache OpenCV text detection TD500 ResNet50 model
+        id: cache-text-detection-td500-resnet50
+        uses: actions/cache@v4
+        with:
+          key: text-detection-td500-resnet50
+          path: |
+            ./models/text_detection_DB_TD500_resnet50.onnx
+
+      - name: Download OpenCV text detection TD500 ResNet50 model
+        if: steps.cache-text-detection-td500-resnet50.outputs.cache-hit != 'true'
+        run: |
+          # source: https://docs.opencv.org/4.x/d4/d43/tutorial_dnn_text_spotting.html
+          mkdir -p models
+          curl -fSL 'https://drive.google.com/uc?export=download&id=19YWhArrNccaoSza0CfkXlA8im4-lAGsR' -o "models/text_detection_DB_TD500_resnet50.onnx"
+
+      - uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: |
+            *.onnx
